@@ -25,7 +25,7 @@ class start():
 
     @connect.command()
     async def stat(ctx,user_name):
-        connection = sqlite3.connect(r"C:\Users\aw5qm\Desktop\あぺぼっと\rankPoint")
+        connection = sqlite3.connect(r"")
         c = connection.cursor()
 
         
