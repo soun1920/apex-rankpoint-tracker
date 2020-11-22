@@ -27,7 +27,7 @@ class command():
 
     @connect.command()
     async def stat(ctx,user_name,platform):
-        connection = sqlite3.connect(__file__,"rankPoint_DB")
+        connection = sqlite3.connect("rankPoint_DB")
         c = connection.cursor()
         
         if platfrom =="ps4":
