@@ -1,6 +1,8 @@
 import discord 
 from discord.ext import commands
 
+import DB
+
 import json
 import os
 import sys
@@ -12,13 +14,12 @@ from pprint import pprint
 
 load_dotenv()
 
-connect = commands.Bot(command_prefix="/")
+connect = commands.Bot(command_prefix="/",owner_id=390393927607255040)
 discord_api=(os.environ["Discord_KEY"])
 base_url = "https://public-api.tracker.gg/v2/apex/standard/"
 
-os.chdir(os.path.dirname(__file__))
 
-connection = sqlite3.connect("rankPoint_DB")
+connection = sqlite3.connect("rankPoint_DB.db")
 c = connection.cursor()
 
 #c.execute("create table rankPoint (discord_id intger , PlayerName text , old_RP integer)")
@@ -26,7 +27,7 @@ c = connection.cursor()
 class commands:
     @connect.group(invoke_without_command=True)
     async def stat(ctx,user_name):
-        connection = sqlite3.connect("rankPoint_DB")
+        connection = sqlite3.connect("rankPoint_DB.db")
         c = connection.cursor()
         
         params = {"TRN-Api-Key":(os.environ["APEX_KEY"])}
@@ -54,17 +55,18 @@ class commands:
             old_point = RP
             c.execute('INSERT INTO rankPoint (discord_id, PlayerName, old_RP) values (?,?,?)', user_data)
         else:
+            await ctx.send("NoData")
             old_point = data_base[2]
             c.execute(f"update rankPoint set old_RP={RP} where discord_id={user_id} AND PlayerName='{user_name}'")
 
         #c.execute("select * from rankPoint")
-
+        print(old_point)
         change = RP - old_point
         if change<0:
             sign = "-"
         elif change == 0:
             sign = ""
-        else:
+        elif change >0:
             sign = "+"
         
         await ctx.send(f"{user_name}  の現在のRPは {RP}({sign}{change}) です " )
@@ -72,9 +74,10 @@ class commands:
         connection.commit()
         c.close()
         connection.close()
+
     @stat.command()
     async def ps4(ctx,user_name):
-        connection = sqlite3.connect("rankPoint_DB")
+        connection = sqlite3.connect("rankPoint_DB.db")
         c = connection.cursor()
         
         params = {"TRN-Api-Key":(os.environ["APEX_KEY"])}
@@ -99,6 +102,7 @@ class commands:
         
         db_all = c.fetchall()
         if len(db_all) == 0:
+            await ctx.send("NoData")
             old_point = RP
             c.execute('INSERT INTO rankPoint (discord_id, PlayerName, old_RP) values (?,?,?)', user_data)
         else:
@@ -112,14 +116,22 @@ class commands:
             sign = "-"
         elif change == 0:
             sign = ""
-        else:
+        elif change > 0: 
             sign = "+"
         
-        await ctx.send(f"{user_name}  の現在のRPは {RP}({sign}{change}) です " )
+        await ctx.send(f"{user_name}  の現在のRPは {RP} ({sign}{change}) です " )
+        
         
         connection.commit()
         c.close()
         connection.close()
+
+    @connect.command(passcontext=True)
+    @commands.is_owner()
+    async def search(ctx,id):
+        result=DB.db_Search(id)
+        await ctx.send(result)
+
 
 
 class events:
