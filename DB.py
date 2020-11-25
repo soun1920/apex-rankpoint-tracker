@@ -8,5 +8,6 @@ def db_Search(value):
 def db_All():
     return pd.read_sql_query(f"select * from rankPoint",connection)
 def graph():
+    return
 if __name__ == "__main__":
     pass
