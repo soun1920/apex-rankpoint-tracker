@@ -50,7 +50,16 @@ class commands:
                 req_data = json.loads(req.text)
                 RP =  req_data['data']['segments'][0]['stats']['rankScore']['value']
             except KeyError:
-                await ctx.send("アカウントが存在しません")
+                try:
+                    params = {"TRN-Api-Key":(os.environ["APEX_KEY"])}
+                    endpoint = "profile/"+"xbox"+"/"+str(user_name)
+                    session = requests.Session()
+                    req = session.get(base_url+endpoint,params=params)
+                    req.close()
+                    req_data = json.loads(req.text)
+                    RP =  req_data['data']['segments'][0]['stats']['rankScore']['value']
+                except KeyError:
+                    await ctx.send("アカウント名が間違っているか、存在しません")
 
 
         user_data = (ctx.author.id , user_name , RP )
@@ -77,10 +86,10 @@ class commands:
         elif change >0:
             sign = "+"
         e=discord.Embed()
-        e.add_field(name=str(user_name),value=str(RP))
-        e.add_field(name="変化量",value="("+sign+str(change)+")")
-        e.set_author(name=ctx.author.name+"#"+ctx.author.discriminator,icon_url=ctx.author.avatar_url)
-        e.set_footer(text="twitter @soun_stw_py,",icon_url="https://pbs.twimg.com/profile_images/1295303780200718336/iLlIhepJ_400x400.jpg")
+        e.add_field(name="RP",value=str(RP))
+        e.add_field(name="前回比",value="("+sign+str(change)+")")
+        e.set_author(name=str(user_name),icon_url=ctx.author.avatar_url)
+        e.set_footer(text="support : @soun_stw_py")
         await ctx.send(embed=e)
         connection.commit()
         c.close()
