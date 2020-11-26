@@ -68,21 +68,19 @@ class commands:
         user_id = ctx.author.id
         
         c.execute(f"SELECT * FROM rankPoint WHERE discord_id={user_id} AND PlayerName='{user_name}'",)
-
-        data_base = c.fetchone()
-        
         db_all = c.fetchall()
+
         if len(db_all) == 0:
-            await ctx.send(len(db_all))
             old_point = RP
-            c.execute('INSERT INTO rankPoint (discord_id, PlayerName, old_RP) values (?,?,?)', user_data)
             c.execute('INSERT INTO rankPoint (discord_id, PlayerName, old_RP) values (?,?,?)', user_data)
 
         else:
+            c.execute(f"SELECT * FROM rankPoint WHERE discord_id={user_id} AND PlayerName='{user_name}'",)
+            data_base = c.fetchone()
             old_point = data_base[2]
             c.execute(f"update rankPoint set old_RP={RP} where discord_id={user_id} AND PlayerName='{user_name}'")
 
-        #c.execute("select * from rankPoint")
+
         change = RP - old_point
         if change<0:
             sign = ""
@@ -111,6 +109,12 @@ class commands:
     async def all(ctx):
         result=DB.db_All()
         await ctx.send(result)
+
+    @connect.command(passcontext=True)
+    @commands.is_owner()
+    async def all_delete(ctx):
+        c.execute("delete from RankPoint",)
+        connection.commit()
 
 
 class events:
