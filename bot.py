@@ -60,6 +60,7 @@ class commands:
                     RP =  req_data['data']['segments'][0]['stats']['rankScore']['value']
                 except KeyError:
                     await ctx.send("アカウント名が間違っているか、存在しません")
+                    return
 
         user_data = (ctx.author.id , user_name , RP )
 
