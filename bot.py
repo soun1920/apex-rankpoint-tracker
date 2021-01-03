@@ -9,8 +9,8 @@ import sys
 import requests
 from dotenv import load_dotenv
 import sqlite3
-
-from pprint import pprint
+import re
+import asyncio
 
 load_dotenv()
 
@@ -23,7 +23,7 @@ connect.remove_command("help")
 connection = sqlite3.connect("rankPoint_DB.db")
 c = connection.cursor()
 
-#c.execute("create table rankPoint (discord_id intger , PlayerName text , old_RP integer)")
+#c.execute("create table invite (discord_message_id intger , invite_link string)")
 
 class commands:
     @connect.group(invoke_without_command=True)
@@ -116,6 +116,33 @@ class commands:
     async def all_delete(ctx):
         c.execute("delete from RankPoint",)
         connection.commit()
+    
+    @connect.group(invoke_without_command=True)
+    async def recr(ctx,member_count,game,channel_name):
+        connection = sqlite3.connect("rankPoint_DB.db")
+        c = connection.cursor()
+        
+        channel = discord.utils.get(ctx.message.guild.voice_channels,name=channel_name)
+        invite=await channel.create_invite()
+        await ctx.message.delete()
+        me=await ctx.send(f"{ctx.author.mention} が` {game} `を` {member_count} ` 人募集しています @everyone")
+        await me.add_reaction("☑️")
+        await me.add_reaction("❌")
+        invite=await channel.create_invite()
+
+        message_id=me.id
+        d=(message_id,str(invite))
+        c.execute(f'INSERT INTO invite(discord_message_id,invite_link) values(?,?)',d)
+
+        connection.commit()
+        c.close()
+        connection.close()
+
+
+        
+        #Channel用のサブコマンドを作ってutilで検索する。
+        #await create        
+
 
 
 class events:
@@ -125,19 +152,115 @@ class events:
         print("login")
         await connect.change_presence(activity=discord.Game(name="[/stat]   server: "+str(len(guild))))
         print(guild)
-
+    @connect.event
     async def on_guild_join(guild):
         guilds=connect.guilds
         await connect.change_presence(activity=discord.Game(name="[/stat]   server: "+str(len(guilds))))
         print("server join" + guild.name) 
-
+    @connect.event
     async def on_guild_remove(guild):
         guilds=connect.guilds
         await connect.change_presence(activity=discord.Game(name="[/stat]   server: "+str(len(guilds))))
         print("server remove" + guild.name)
+    #@connect.event
     async def on_command_error(ctx,error):
         print(ctx,error)
         pass
+    @connect.event
+    async def on_reaction_add(reaction,user):
+
+        if user.bot:
+            return
+
+        connection = sqlite3.connect("rankPoint_DB.db")
+        c = connection.cursor()
+        if reaction.emoji == ("☑️"):
+            count_check=re.search(r" (\d) ",reaction.message.content).group()
+            user_id=re.search(r"<(.*)>",reaction.message.content).group()
+            game=re.search(r"が(.*)を",reaction.message.content).group()
+
+            if user.mention != user_id:
+                if int(count_check)==1:
+                    await reaction.message.clear_reactions()
+                    await reaction.message.edit(content=f"終了しました")
+                    c.execute(f"delete from invite where discord_message_id={reaction.message.id}")
+                    return
+                
+                await reaction.message.edit(content=f"{user_id}{game}` {int(count_check)-1} `人募集しています @everyone")
+                c.execute(f"select * from invite where discord_message_id={reaction.message.id} ",)
+                d=c.fetchone()
+
+                invite_link = d[1]
+                dm=await user.create_dm()
+
+                try:
+                    await dm.send(invite_link)
+                except discord.errors.Forbidden:
+                    me=await reaction.message.channel.send(user.mention+"  "+invite_link)
+                    voice_status = user.voice
+                    while voice_status == None:
+                        voice_status = user.voice
+                        await asyncio.sleep(1)
+                    else:
+                        await me.delete()
+                        return
+
+            else:
+                await reaction.remove(user)
+                me = await reaction.message.channel.send(user.mention+'募集を始めた人が押すことはできません')
+                await asyncio.sleep(3)
+                await me.delete()
+
+
+        if reaction.emoji == ("❌"):
+            count_check=re.search(r" (\d) ",reaction.message.content).group()
+            user_id=re.search(r"<(.*)>",reaction.message.content).group()
+            game=re.search(r"が(.*)を",reaction.message.content).group()
+            if user.mention == user_id :
+                #DBにreaction.message.idとauthorを登録
+                me = await reaction.message.channel.send(f"本当に終了しますか？ yes=✅ ||{reaction.message.id}||")
+                await me.add_reaction("✅")
+                await me.add_reaction("❎")
+                await reaction.remove(user)
+            else :
+                await reaction.remove(user)
+                me = await reaction.message.channel.send(user.mention+'募集を始めた人以外が押すことはできません')
+                await asyncio.sleep(3)
+                await me.delete()
+        
+        if reaction.emoji == ("✅"):
+            await reaction.message.delete()
+            reaction_me=re.search(r"\d+",reaction.message.content).group()
+            reaction_message=await reaction.message.channel.fetch_message(int(reaction_me))
+            await reaction_message.delete()
+            c.execute(f"select * from invite where discord_message_id={reaction.message.id} ",)
+        
+        if reaction.emoji == ("❎"):
+            await reaction.message.delete()
+            reaction_me=re.search(r"\d+",reaction.message.content).group()
+            reaction_message=await reaction.message.channel.fetch_message(int(reaction_me))
+
+        connection.commit()
+        connection.close()
+            
+    @connect.event
+    async def on_raw_reaction_remove(payload):
+        channel=connect.get_channel(payload.channel_id)
+        user = connect.get_user(payload.user_id)
+        reaction_message=await channel.fetch_message(payload.message_id)
+
+        count_check=re.search(r" (\d) ",reaction_message.content).group() 
+        game=re.search(r"が(.*)を",reaction_message.content).group()
+        
+        if payload.user_id == 778463314543378464:
+            return
+
+        if payload.emoji.name == ("☑️"):
+            user_id=re.search(r"<(.*?)>",reaction_message.content).group()
+            if user_id != f"<@{payload.user_id}>":
+                await reaction_message.edit(content=f"{user_id}{game}` {int(count_check)+1} `人募集しています @everyone")
+            
+        
 
 
 connect.run(discord_api)
