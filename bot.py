@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 
 import DB
+import get_time
 
 import json
 import os
@@ -11,6 +12,9 @@ from dotenv import load_dotenv
 import sqlite3
 import re
 import asyncio
+import datetime
+from operator import itemgetter
+
 
 load_dotenv()
 
@@ -23,7 +27,7 @@ connect.remove_command("help")
 connection = sqlite3.connect("rankPoint_DB.db")
 c = connection.cursor()
 
-#c.execute("create table invite (discord_message_id intger , invite_link string)")
+#c.execute("create table rankPoint (discord_id integer , PlayerName text , old_RP integer , time text )")
 
 class commands:
     @connect.group(invoke_without_command=True)
@@ -59,10 +63,12 @@ class commands:
                 try:
                     RP =  req_data['data']['segments'][0]['stats']['rankScore']['value']
                 except KeyError:
-                    await ctx.send("アカウント名が間違っているか、存在しません")
+                    await ctx.send("``` Key Error ```")
                     return
 
-        user_data = (ctx.author.id , user_name , RP )
+        now_time = get_time.get_jst()
+        now = datetime.datetime.now(now_time)
+        user_data = (ctx.author.id , user_name , RP , now.strftime('%Y-%m-%d-%H-%M-%S'))
 
 
 
@@ -70,16 +76,32 @@ class commands:
         
         c.execute(f"SELECT * FROM rankPoint WHERE discord_id={user_id} AND PlayerName='{user_name}'",)
         db_all = c.fetchall()
+        db_all.sort(key=itemgetter(3))
+        try:
+            print(db_all)
+            old_point = db_all[0][2]
+        except:
+            pass
 
         if len(db_all) == 0:
-            old_point = RP
-            c.execute('INSERT INTO rankPoint (discord_id, PlayerName, old_RP) values (?,?,?)', user_data)
+            old_point=RP
+            c.execute(
+                'INSERT INTO rankPoint (discord_id, PlayerName, old_RP, time ) values (?,?,?,?)', user_data)
 
-        else:
-            c.execute(f"SELECT * FROM rankPoint WHERE discord_id={user_id} AND PlayerName='{user_name}'",)
-            data_base = c.fetchone()
-            old_point = data_base[2]
-            c.execute(f"update rankPoint set old_RP={RP} where discord_id={user_id} AND PlayerName='{user_name}'")
+        if len(db_all) == 7:
+            c.execute(
+                f"delete from rankpoint where discord_id={user_id} AND PlayerName='{user_name}' and time='{db_all[6][3]}'"
+                )
+
+            c.execute(
+                'INSERT INTO rankPoint (discord_id, PlayerName, old_RP, time ) values (?,?,?,?)', user_data
+                )
+
+        if len(db_all) < 7 and len(db_all) >= 1:
+
+            c.execute(
+                'INSERT INTO rankPoint (discord_id, PlayerName, old_RP, time ) values (?,?,?,?)', user_data
+                )
 
 
         change = RP - old_point
@@ -96,6 +118,7 @@ class commands:
         e.set_footer(text="support : @soun_stw_py")
         await ctx.send(embed=e)
         connection.commit()
+
         c.close()
         connection.close()
 
@@ -164,7 +187,9 @@ class events:
         print("server remove" + guild.name)
     #@connect.event
     async def on_command_error(ctx,error):
+        channel=connect.get_channel(778517624949571605)
         print(ctx,error)
+        await channel.send(ctx+error)
         pass
     @connect.event
     async def on_reaction_add(reaction,user):
