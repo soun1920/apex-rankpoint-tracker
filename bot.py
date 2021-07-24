@@ -34,6 +34,10 @@ c = connection.cursor()
 class commands:
     @connect.group(invoke_without_command=True)
     async def stat(ctx, user_name):
+
+        if re.match(r"[ぁ-んァ-ヶ亜-熙]+", user_name):
+            await ctx.send("```Steamの名前ではなくOriginIDを入力してください```")
+
         connection = sqlite3.connect("rankPoint_DB.db")
         c = connection.cursor()
         r = get_status.rankPoint(user_name)
@@ -138,6 +142,11 @@ class commands:
 
         # Channel用のサブコマンドを作ってutilで検索する。
         # await create
+
+    @connect.command(passcontext=True)
+    @connect.is_owner()
+    async def exit(ctx):
+        sys.exit(0)
 
 
 class events:

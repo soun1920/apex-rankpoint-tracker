@@ -1,3 +1,4 @@
 .env
 rankPoint_DB.db
 .
+.vscode/launch.json
