@@ -2,3 +2,4 @@
 rankPoint_DB.db
 .
 .vscode/launch.json
+__pycache__/
