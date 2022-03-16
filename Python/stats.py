@@ -1,42 +1,56 @@
 from dotenv import load_dotenv
-import requests
+import aiohttp
+import asyncio
+from typing import Optional
 
-from datetime import datetime, timedelta. timezone
+from datetime import datetime, timedelta, timezone
 import json
 import os
 
 load_dotenv()
-platform = ["origin", "psn", "xbl"]
+global_platform = ["PC", "PS4", "X1"]
+apex_key = os.environ["APEX_KEY"]
 
-base_url = "https://public-api.tracker.gg/v2/apex/standard/"
-JST = timezone(timedelta(hours=+9), 'JST')
+base_url = "https://api.mozambiquehe.re/bridge?version=5"
+JST = timezone(timedelta(hours=+9), "JST")
 
 
 class Stats:
     def __init__(self, name: str) -> None:
+        self.loop = asyncio.get_event_loop()
         self.name = name
-        self.point = get_RP(self.name)
+        self.stats = self.loop.run_until_complete(self.get_stats(self.name))
+        self.point = None
         self.platform = None
-        self.datetime = None
 
-    def get_RP(name: str) -> int:
-        params = {"TRN-Api-Key": os.environ["TRN_KEY"]}
-        session = requests.Session()
+    async def get_stats(self, name: str, *, platform: Optional[str] = None):
+        async with aiohttp.ClientSession() as session:
+            if platform:
+                res = await session.get(self.parse_endpoint(name, platform))
+                if res.status == 200:
+                    return await res.json(content_type="text/plain")
+                else:
+                    raise ValueError
+            else:
+                for i in global_platform:
+                    res = await session.get(self.parse_endpoint(name, i))
+                    if res.status == 200:
+                        return await res.json(content_type="text/plain")
+                    else:
+                        raise ValueError
 
-        for i in platform:
-            endpoint = "profile/"+i+"/"+str(name)
-            req = session.get(base_url+endpoint, params=params)
+    @property
+    def rankpoint(self):
+        return self.stats["global"]["rank"]["rankScore"]
 
-            req.close()
-            if req.status_code == 404:
-                continue
-            req_data = json.loads(req.text)
+    @property
+    def rankseason(self):
+        return self.stats["global"]["rank"]["rankedSeason"]
 
-            if req_data.get("data"):
-                self.platform = i
-                self.datetime = datetime.now()
-                return req_data['data']['segments'][0]['stats']['rankScore']['value']
+    def parse_endpoint(self, name, platform) -> str:
+        return f"{base_url}&platform={platform}&player={name}&auth={apex_key}"
 
 
-if __name__ == '__main__':
-    pass
+if __name__ == "__main__":
+    s = Stats("soun1920")
+    print(s.rankpoint)
