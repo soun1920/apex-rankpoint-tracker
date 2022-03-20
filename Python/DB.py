@@ -1,13 +1,9 @@
-from dataclasses import dataclass
-from platform import platform
-from typing import Coroutine
 import asyncpg
 from dotenv import load_dotenv
 
 import os
-import datatime
-from typing import Optional
-from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional, Any
 
 load_dotenv()
 dsn = os.environ["POSTGRES"]
@@ -22,23 +18,22 @@ class SQL:
     def __init__(
             self, id: int,
             name: str,
-            platform: str = None,
+            platform: Optional[str] = None,
             rankseson: Optional[str] = None
     ) -> None:
         self.id = id  # discord user id
         self.name = name  # apex player name
-        self.platform = platform
-        self.datetime = None
-        self.rankpoint = rankpoint
-        self.rankseason = rankseson
+        self._platform: Optional[str] = platform
+        self._rankseason: Optional[str] = rankseson
         self.pool = make_pool()
+        self.data = self.latest_data()
 
-    async def get_data(self, id, player_name) -> list:
+    async def select(self, id, player_name) -> asyncpg.Record:
         return await self.pool.fetch(f'SELECT * FROM {table_name} WHERE id=$1 and playername=$2', id, player_name)
 
-    async def insert_data(
+    async def insert(
         self, id: int, name: str,
-        platform: str, point: int, rankseason: str, dt: datatime
+        platform: str, point: int, rankseason: str, dt
     ) -> str:
         return await self.pool.execute(
             f'INSERT INTO {table_name} (id,playername,platform,point,rankseson) VALUES ($1,$2,$3,$4,$5,$6)',
@@ -49,6 +44,9 @@ class SQL:
         self.pool.fetch(
             f"SELECT EXISTS (SELECT * FROM {table_name} WHERE id={self.id} and playername={self.name})")
 
-    @property
-    async def latest_data(self) -> list:  # 直近のデータ
+    async def latest_data(self) -> asyncpg.Record:  # 直近のデータ
         return await self.pool.fetch(f"SELECT MAX(datetime) FROM {table_name} WHERE id=$1 and playername=$2", self.id, self.name)
+
+    @property
+    def platform(self):
+        return
