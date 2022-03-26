@@ -1,18 +1,40 @@
-from discord import Bot, ApplicationContext
-from discord.commands import Option
+import discord
+from discord.ext import commands
 from dotenv import load_dotenv
 
 from stats import Stats
+from db import SQL
+import utils
 
 from os import environ
+import sys
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 load_dotenv()
-bot = Bot()
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix="/", intents=intents)
 
 
-@bot.slash_command(name="rankpoint")
-async def rp_command(ctx: ApplicationContext, name: Option(str, "OriginID・PSNIDを入力してください")):
-    stats = Stats(name)
-    await ctx.respond(stats.point)
+@bot.event
+async def on_ready():
+    print("on_ready")
+
+
+@bot.command(name="rp")
+async def rp_command(ctx, name):
+    sql = SQL(ctx.author.id, name)
+    await sql.create_pool()
+
+    if await sql.is_exists():
+        stats = await Stats.init(name, platform=sql.platform)
+    else:
+        stats = await Stats.init(name)
+    await sql.insert(ctx.author.id, name, stats.platform, stats.rankpoint,
+                     stats.rankedseason, utils.now())
+
+    await ctx.send(stats.rankpoint)
+
 
 bot.run(environ["Discord_KEY"])
