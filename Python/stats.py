@@ -17,11 +17,13 @@ JST = timezone(timedelta(hours=+9), "JST")
 
 class Stats:
     def __init__(self, name: str, platform: Optional[str] = None) -> None:
-        self.loop = asyncio.get_event_loop()
-        self.name = name
-        self.__platform = platform
-        self.stats = self.loop.run_until_complete(
-            self.get_stats(self.name, platform=self.__platform))
+        self._name = name
+        self._platform = platform
+
+    @classmethod
+    async def init(cls, name: str, platform: Optional[str] = None):
+        cls.stats = await cls.get_stats(cls, name, platform=platform)
+        return cls(name, platform)
 
     async def get_stats(self, name: str, *, platform: Optional[str] = None):
         async with aiohttp.ClientSession() as session:
@@ -51,7 +53,7 @@ class Stats:
     def platform(self):
         return self.stats['global']['platform']
 
-    def parse_endpoint(self, name, platform) -> str:
+    def parse_endpoint(name, platform) -> str:
         return f"{base_url}&platform={platform}&player={name}&auth={apex_key}"
 
 
