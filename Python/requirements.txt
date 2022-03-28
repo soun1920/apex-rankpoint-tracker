@@ -1,0 +1,4 @@
+asyncpg==0.25.0
+discord.py @ git+https://github.com/Rapptz/discord.py@4dc24a005a5f78c1fc004667dd5241c8fc3eb253
+python-dotenv==0.19.2
+
