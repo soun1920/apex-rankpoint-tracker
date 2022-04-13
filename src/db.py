@@ -1,9 +1,7 @@
 import asyncpg
 from dotenv import load_dotenv
 
-import asyncio
 import os
-from datetime import datetime
 from typing import Optional, Any
 
 load_dotenv("../.env")
@@ -55,7 +53,8 @@ class SQL:
             return True
 
     async def latest_data(self) -> asyncpg.Record:  # 直近のデータ
-        return await self.pool.fetch(f'SELECT MAX(datetime) FROM {table_name} WHERE id=$1 and name=$2', self.id, self.name)
+        return await self.pool.fetchrow(
+            f'SELECT * FROM {table_name} WHERE id=$1 and name=$2 and datetime=(SELECT MAX(datetime) FROM test)', self.id, self.name)
 
     @property
     def platform(self):

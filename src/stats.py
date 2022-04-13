@@ -1,10 +1,9 @@
 from dotenv import load_dotenv
 import aiohttp
-import asyncio
+
 from typing import Optional
 
 from datetime import datetime, timedelta, timezone
-import json
 import os
 
 load_dotenv("../.env")
@@ -58,5 +57,4 @@ class Stats:
 
 
 if __name__ == "__main__":
-    s = Stats("soun1920")
-    print(s.rankpoint)
+    pass

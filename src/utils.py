@@ -6,9 +6,5 @@ def now():
     return datetime.now()
 
 
-def rp_diff(self, before: int, after: int) -> Optional[int]:
-    diff = after - before
-    if diff == 0:
-        return None
-    else:
-        return diff
+def rp_diff(before: int, after: int) -> Optional[int]:
+    return after - before
