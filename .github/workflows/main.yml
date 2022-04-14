@@ -25,5 +25,5 @@ jobs:
         run: |
           cd /home/pi/opt/apex-rankpoint-tracker/
           git pull origin main
-          systemctl restart art
+          sudo systemctl restart art
           
