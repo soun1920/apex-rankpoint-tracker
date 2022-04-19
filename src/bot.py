@@ -42,5 +42,6 @@ async def rp_command(ctx, name):
     await ctx.send(f"現在: __{stats.rankpoint}__")
     await ctx.send(f"前回取得との差: __{diff}__")
 
+    await sql.close()
 
 bot.run(environ["Discord_KEY"])
