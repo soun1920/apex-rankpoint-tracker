@@ -26,7 +26,7 @@ class Stats:
 
     async def get_stats(self, name: str, *, platform: Optional[str] = None):
         async with aiohttp.ClientSession() as session:
-            if platform:
+            if platform in global_platform:
                 res = await session.get(self.parse_endpoint(name, platform))
                 if res.status == 200:
                     return await res.json(content_type="text/plain")
@@ -35,10 +35,11 @@ class Stats:
             else:
                 for i in global_platform:
                     res = await session.get(self.parse_endpoint(name, i))
-                    if res.status == 200:
-                        return await res.json(content_type="text/plain")
-                    else:
-                        raise ValueError
+                    dict_res = await res.json(content_type="text/plain")
+                    if "global" in dict_res:
+                        return dict_res
+                else:
+                    raise ValueError
 
     @property
     def rankpoint(self):

@@ -28,6 +28,8 @@ async def rp_command(ctx, name):
     sql = SQL(ctx.author.id, name)
     await sql.create_pool()
     latest_data = await sql.latest_data()
+    if latest_data is None:
+        latest_data = {"point": 0}
 
     embed = discord.Embed()
 
