@@ -1,4 +1,5 @@
 import discord
+import sentry_sdk
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -15,6 +16,7 @@ logger = getLogger(__name__)
 load_dotenv("../.env")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="/", intents=intents)
+sentry_sdk.init(environ["sentry"])
 
 
 @bot.event
