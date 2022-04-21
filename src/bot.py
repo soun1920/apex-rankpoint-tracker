@@ -30,8 +30,6 @@ async def rp_command(ctx, name):
     sql = SQL(ctx.author.id, name)
     await sql.create_pool()
     latest_data = await sql.latest_data()
-    if latest_data is None:
-        latest_data = {"point": 0}
 
     embed = discord.Embed()
 
@@ -42,10 +40,13 @@ async def rp_command(ctx, name):
     await sql.insert(ctx.author.id, name, stats.platform, stats.rankpoint,
                      stats.rankedseason, utils.now())
 
+    if latest_data is None:
+        latest_data = {"point": stats.rankpoint}
+
     diff = utils.rp_diff(latest_data["point"], stats.rankpoint)
     await ctx.send(f"現在: __{stats.rankpoint}__")
     await ctx.send(f"前回取得との差: __{diff}__")
 
-    await sql.close()
+    await sql.pool.close()
 
 bot.run(environ["Discord_KEY"])
