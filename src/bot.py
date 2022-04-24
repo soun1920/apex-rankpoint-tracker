@@ -24,9 +24,13 @@ async def on_ready():
     print("on_ready")
 
 
+@bot.event
+async def on_command_error(context, exception):
+    sentry_sdk.capture_exception(exception)
+
+
 @bot.command(name="rp")
 async def rp_command(ctx, name):
-
     sql = SQL(ctx.author.id, name)
     await sql.create_pool()
     latest_data = await sql.latest_data()
@@ -48,5 +52,6 @@ async def rp_command(ctx, name):
     await ctx.send(f"前回取得との差: __{diff}__")
 
     await sql.pool.close()
+
 
 bot.run(environ["Discord_KEY"])
