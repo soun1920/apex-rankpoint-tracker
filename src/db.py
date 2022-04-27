@@ -1,9 +1,9 @@
+import logging
+import os
+from typing import Any, Optional
+
 import asyncpg
 from dotenv import load_dotenv
-
-import os
-import logging
-from typing import Optional, Any
 
 load_dotenv("../.env")
 dsn = os.environ["POSTGRES"]
