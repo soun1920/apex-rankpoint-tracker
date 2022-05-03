@@ -5,6 +5,7 @@ from os import environ
 import discord
 import sentry_sdk
 from discord.ext import commands
+from discord import app_commands
 from dotenv import load_dotenv
 
 import utils
@@ -16,7 +17,7 @@ logger = getLogger(__name__)
 
 load_dotenv("../.env")
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="/", intents=intents)
+bot = commands.Bot(intents=intents, command_prefix="/")
 sentry_sdk.init(environ["sentry"])
 
 
@@ -24,6 +25,7 @@ sentry_sdk.init(environ["sentry"])
 async def on_ready():
     print("on_ready")
     print(f"avatar {bot.user.avatar.url}")
+    await bot.tree.sync(guild=discord.Object(830279797920759818))
 
 
 @bot.event
@@ -31,10 +33,9 @@ async def on_command_error(context, exception):
     sentry_sdk.capture_exception(exception)
 
 
-@bot.command(name="rp")
-async def rp_command(ctx, name):
-
-    sql = SQL(ctx.author.id, name)
+@bot.tree.command(name="rankpointttttt")
+async def rankpoint(interaction: discord.Interaction, name: str):
+    sql = SQL(interaction.user.id, name)
     await sql.create_pool()
     latest_data = await sql.latest_data()
 
@@ -45,7 +46,7 @@ async def rp_command(ctx, name):
         sql.point = stats.rankpoint
 
     await sql.insert(
-        ctx.author.id,
+        interaction.user.id,
         name,
         stats.platform,
         stats.rankpoint,
@@ -54,10 +55,10 @@ async def rp_command(ctx, name):
     )
     diff = utils.rp_diff(sql.point, stats.rankpoint)
 
-    await ctx.send(f"現在: __{stats.rankpoint}__")
-    await ctx.send(f"前回取得との差: __{diff}__")
+    await interaction.response.send_message(f"現在: __{stats.rankpoint}__")
+    await interaction.response.send_message(f"前回取得との差: __{diff}__")
 
     await sql.pool.close()
 
-
+bot.tree.add_command(rankpoint, guild=discord.Object(830279797920759818))
 bot.run(environ["Discord_KEY"])
