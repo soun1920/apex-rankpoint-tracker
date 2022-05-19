@@ -23,9 +23,6 @@ sentry_sdk.init(environ["sentry"])
 @bot.event
 async def on_ready():
     print("on_ready")
-    print(f"avatar {bot.user.avatar.url}")
-
-    print(bot.tree.clear_commands(guild=discord.Object(830279797920759818)))
     await bot.tree.sync()
 
 
@@ -71,5 +68,5 @@ async def rankpoint(interaction: discord.Interaction, name: str):
     await sql.pool.close()
 
 
-bot.tree.add_command(rankpoint, guild=discord.Object(830279797920759818))
+bot.tree.add_command(rankpoint)
 bot.run(environ["Discord_KEY"])
