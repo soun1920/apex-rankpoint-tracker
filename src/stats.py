@@ -50,8 +50,12 @@ class Stats:
         return self.stats["global"]["rank"]["rankedSeason"]
 
     @property
+    def rankimg(self):
+        return self.stats["global"]["rank"]["rankImg"]
+
+    @property
     def platform(self):
-        return self.stats['global']['platform']
+        return self.stats["global"]["platform"]
 
     def parse_endpoint(name, platform) -> str:
         return f"{base_url}&platform={platform}&player={name}&auth={apex_key}"
