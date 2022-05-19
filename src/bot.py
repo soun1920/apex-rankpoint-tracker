@@ -1,4 +1,3 @@
-
 from logging import getLogger
 from os import environ
 
@@ -25,7 +24,9 @@ sentry_sdk.init(environ["sentry"])
 async def on_ready():
     print("on_ready")
     print(f"avatar {bot.user.avatar.url}")
-    await bot.tree.sync(guild=discord.Object(830279797920759818))
+
+    print(bot.tree.clear_commands(guild=discord.Object(830279797920759818)))
+    await bot.tree.sync()
 
 
 @bot.event
@@ -33,7 +34,7 @@ async def on_command_error(context, exception):
     sentry_sdk.capture_exception(exception)
 
 
-@bot.tree.command(name="rankpointttttt")
+@bot.tree.command(name="rankpoint")
 async def rankpoint(interaction: discord.Interaction, name: str):
     sql = SQL(interaction.user.id, name)
     await sql.create_pool()
@@ -55,10 +56,20 @@ async def rankpoint(interaction: discord.Interaction, name: str):
     )
     diff = utils.rp_diff(sql.point, stats.rankpoint)
 
-    await interaction.response.send_message(f"現在: __{stats.rankpoint}__")
-    await interaction.response.send_message(f"前回取得との差: __{diff}__")
+    embed = await utils.parse_embed(
+        name,
+        interaction.user.name,
+        interaction.user.avatar.url,
+        interaction.user.color,
+        stats.rankpoint,
+        diff,
+        stats.rankimg,
+    )
+
+    await interaction.response.send_message(embed=embed)
 
     await sql.pool.close()
+
 
 bot.tree.add_command(rankpoint, guild=discord.Object(830279797920759818))
 bot.run(environ["Discord_KEY"])
