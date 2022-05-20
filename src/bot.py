@@ -23,7 +23,6 @@ sentry_sdk.init(environ["sentry"])
 @bot.event
 async def on_ready():
     print("on_ready")
-    await bot.tree.sync()
 
 
 @bot.event
@@ -33,6 +32,8 @@ async def on_command_error(context, exception):
 
 @bot.tree.command(name="rankpoint")
 async def rankpoint(interaction: discord.Interaction, name: str):
+
+    await interaction.response.defer(thinking=True)
     sql = SQL(interaction.user.id, name)
     await sql.create_pool()
     latest_data = await sql.latest_data()
@@ -43,14 +44,6 @@ async def rankpoint(interaction: discord.Interaction, name: str):
         stats = await Stats.init(name)
         sql.point = stats.rankpoint
 
-    await sql.insert(
-        interaction.user.id,
-        name,
-        stats.platform,
-        stats.rankpoint,
-        stats.rankedseason,
-        utils.now(),
-    )
     diff = utils.rp_diff(sql.point, stats.rankpoint)
 
     embed = await utils.parse_embed(
@@ -63,10 +56,16 @@ async def rankpoint(interaction: discord.Interaction, name: str):
         stats.rankimg,
     )
 
-    await interaction.response.send_message(embed=embed)
+    await interaction.edit_original_message(embed=embed)
+    await sql.insert(
+        interaction.user.id,
+        name,
+        stats.platform,
+        stats.rankpoint,
+        stats.rankedseason,
+        utils.now(),
+    )
 
     await sql.pool.close()
 
-
-bot.tree.add_command(rankpoint)
 bot.run(environ["Discord_KEY"])
